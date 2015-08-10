@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"follow_symlinks": true,
+			"path": "."
+		}
+	],
+    "compilerOptions": {
+        "module": "commonjs",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "outDir": "build/js",
+        "target": "es5",
+        "noEmitOnError" : true
+    }
+}
