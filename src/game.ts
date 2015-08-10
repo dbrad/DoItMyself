@@ -16,7 +16,7 @@ module Input {
   for (var i = 0; i < 256; i++) {
     _isUp[i] = true;
   }
-  
+
   export function isDown(keyCode: KEY) {
     return (_isDown[keyCode]);
   }
@@ -64,16 +64,14 @@ class Dimension {
 
 class Texture {
   private image: any;
-  private _size: Dimension;
-  get size(): Dimension {
-    return this._size;
-  }
+  public size: Dimension;
+
   constructor(src:string, width: number, height: number) {
     this.image         = new Image();
     this.image.width   = width;
     this.image.height  = height;
     this.image.src     = src;
-    this._size = new Dimension(width, height);
+    this.size = new Dimension(width, height);
   }
 }
 

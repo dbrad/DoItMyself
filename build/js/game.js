@@ -69,15 +69,8 @@ var Texture = (function () {
         this.image.width = width;
         this.image.height = height;
         this.image.src = src;
-        this._size = new Dimension(width, height);
+        this.size = new Dimension(width, height);
     }
-    Object.defineProperty(Texture.prototype, "size", {
-        get: function () {
-            return this._size;
-        },
-        enumerable: true,
-        configurable: true
-    });
     return Texture;
 })();
 var Sprite = (function () {
