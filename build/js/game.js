@@ -5,45 +5,48 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var Input;
 (function (Input) {
-    (function (KEY) {
-        KEY[KEY["LEFT"] = 37] = "LEFT";
-        KEY[KEY["RIGHT"] = 39] = "RIGHT";
-        KEY[KEY["UP"] = 38] = "UP";
-        KEY[KEY["DOWN"] = 40] = "DOWN";
-        KEY[KEY["A"] = 65] = "A";
-        KEY[KEY["D"] = 68] = "D";
-    })(Input.KEY || (Input.KEY = {}));
-    var KEY = Input.KEY;
-    var _isDown = [];
-    var _isUp = [];
-    var _wasDown = [];
-    for (var i = 0; i < 256; i++) {
-        _isUp[i] = true;
-    }
-    function isDown(keyCode) {
-        return (_isDown[keyCode]);
-    }
-    Input.isDown = isDown;
-    function wasDown(keyCode) {
-        var result = _wasDown[keyCode];
-        _wasDown[keyCode] = false;
-        return (result);
-    }
-    Input.wasDown = wasDown;
-    function keyDown(event) {
-        var keyCode = event.which;
-        _isDown[keyCode] = true;
-        if (_isUp[keyCode])
-            _wasDown[keyCode] = true;
-        _isUp[keyCode] = false;
-    }
-    Input.keyDown = keyDown;
-    function keyUp(event) {
-        var keyCode = event.which;
-        _isDown[keyCode] = false;
-        _isUp[keyCode] = true;
-    }
-    Input.keyUp = keyUp;
+    var Keyboard;
+    (function (Keyboard) {
+        (function (KEY) {
+            KEY[KEY["LEFT"] = 37] = "LEFT";
+            KEY[KEY["RIGHT"] = 39] = "RIGHT";
+            KEY[KEY["UP"] = 38] = "UP";
+            KEY[KEY["DOWN"] = 40] = "DOWN";
+            KEY[KEY["A"] = 65] = "A";
+            KEY[KEY["D"] = 68] = "D";
+        })(Keyboard.KEY || (Keyboard.KEY = {}));
+        var KEY = Keyboard.KEY;
+        var _isDown = [];
+        var _isUp = [];
+        var _wasDown = [];
+        for (var i = 0; i < 256; i++) {
+            _isUp[i] = true;
+        }
+        function isDown(keyCode) {
+            return (_isDown[keyCode]);
+        }
+        Keyboard.isDown = isDown;
+        function wasDown(keyCode) {
+            var result = _wasDown[keyCode];
+            _wasDown[keyCode] = false;
+            return (result);
+        }
+        Keyboard.wasDown = wasDown;
+        function keyDown(event) {
+            var keyCode = event.which;
+            _isDown[keyCode] = true;
+            if (_isUp[keyCode])
+                _wasDown[keyCode] = true;
+            _isUp[keyCode] = false;
+        }
+        Keyboard.keyDown = keyDown;
+        function keyUp(event) {
+            var keyCode = event.which;
+            _isDown[keyCode] = false;
+            _isUp[keyCode] = true;
+        }
+        Keyboard.keyUp = keyUp;
+    })(Keyboard = Input.Keyboard || (Input.Keyboard = {}));
 })(Input || (Input = {}));
 var Point = (function () {
     function Point(x, y) {
@@ -116,9 +119,9 @@ var Profiler = (function (_super) {
     }
     Profiler.prototype.profile = function (delta) {
         this.timer += delta;
-        if (this.timer >= 1000) {
+        if (this.timer >= 1000.0) {
+            this.timer -= 1000.0;
             this.emit(this.FPS);
-            this.timer -= 1000;
             this.FPS = 0;
         }
         ;
@@ -129,8 +132,9 @@ var Profiler = (function (_super) {
 var Game = (function () {
     function Game(screen) {
         this.speed = 20;
-        this.keyboardPoll = 0;
+        this.timer = 0.0;
         this.then = performance.now();
+        console.log(Game.DELTA_CONST);
         this.screen = screen;
         this.ctx = this.screen.getContext("2d");
         this.profiler = new Profiler();
@@ -140,26 +144,26 @@ var Game = (function () {
         this.Player = new Sprite(new Texture("HEY", 20, 20));
     }
     Game.prototype.update = function (delta) {
-        if (Input.wasDown(Input.KEY.RIGHT)) {
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.RIGHT)) {
             if (this.Player.position.x + 20 < 800)
                 this.Player.position.x += this.speed;
         }
-        if (Input.wasDown(Input.KEY.LEFT)) {
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.LEFT)) {
             if (this.Player.position.x > 0)
                 this.Player.position.x -= this.speed;
         }
-        if (Input.wasDown(Input.KEY.UP)) {
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.UP)) {
             if (this.Player.position.y > 0)
                 this.Player.position.y -= this.speed;
         }
-        if (Input.wasDown(Input.KEY.DOWN)) {
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.DOWN)) {
             if (this.Player.position.y + 20 < 600)
                 this.Player.position.y += this.speed;
         }
-        if (Input.wasDown(Input.KEY.A)) {
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.A)) {
             this.Player.rotation -= 45;
         }
-        if (Input.wasDown(Input.KEY.D)) {
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.D)) {
             this.Player.rotation += 45;
         }
     };
@@ -168,13 +172,18 @@ var Game = (function () {
             this.Player.draw(this.ctx);
     };
     Game.prototype.render = function () {
-        var now = performance.now();
-        var delta = now - this.then;
-        this.then = now;
-        this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
-        this.update(delta);
-        this.draw();
-        this.profiler.profile(delta);
+        this.timer += Game.DELTA_CONST;
+        ;
+        if (this.timer >= Math.floor(1000.0 / Game.frameRate)) {
+            this.timer -= 16;
+            var now = performance.now();
+            var delta = (now - this.then);
+            this.then = now;
+            this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
+            this.update(delta);
+            this.draw();
+            this.profiler.profile(delta);
+        }
     };
     Game.prototype.run = function () {
         console.log("Game running");
@@ -185,12 +194,12 @@ var Game = (function () {
         clearInterval(this._loopHandle);
     };
     Game.frameRate = 60.0;
-    Game.DELTA_CONST = Math.floor(1000.0 / Game.frameRate);
+    Game.DELTA_CONST = Math.floor((1000.0 / Game.frameRate) * 0.5);
     return Game;
 })();
 window.onload = function () {
-    window.onkeydown = Input.keyDown;
-    window.onkeyup = Input.keyUp;
+    window.onkeydown = Input.Keyboard.keyDown;
+    window.onkeyup = Input.Keyboard.keyUp;
     var c = document.getElementById("gameCanvas");
     var game = new Game(c);
     game.run();

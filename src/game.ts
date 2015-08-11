@@ -1,46 +1,47 @@
 module Input {
+  export module Keyboard {
+    export enum KEY {
+      LEFT = 37,
+      RIGHT = 39,
+      UP = 38,
+      DOWN = 40,
+      A = 65,
+      D = 68
+    }
 
-  export enum KEY {
-    LEFT = 37,
-    RIGHT = 39,
-    UP = 38,
-    DOWN = 40,
-    A = 65,
-    D = 68
-  }
+    var _isDown:  boolean[] = [];
+    var _isUp:    boolean[] = [];
+    var _wasDown: boolean[] = [];
 
-  var _isDown:  boolean[] = [];
-  var _isUp:    boolean[] = [];
-  var _wasDown: boolean[] = [];
+    for (var i = 0; i < 256; i++) {
+      _isUp[i] = true;
+    }
 
-  for (var i = 0; i < 256; i++) {
-    _isUp[i] = true;
-  }
+    export function isDown(keyCode: KEY) {
+      return (_isDown[keyCode]);
+    }
 
-  export function isDown(keyCode: KEY) {
-    return (_isDown[keyCode]);
-  }
+    export function wasDown(keyCode: KEY) {
+      var result = _wasDown[keyCode];
+      _wasDown[keyCode] = false;
+      return (result);
+    }
 
-  export function wasDown(keyCode: KEY) {
-    var result = _wasDown[keyCode];
-    _wasDown[keyCode] = false;
-    return (result);
-  }
+    export function keyDown(event: any) {
+      var keyCode = event.which;
 
-  export function keyDown(event: any) {
-    var keyCode = event.which;
+      _isDown[keyCode] = true;
+      if(_isUp[keyCode])
+        _wasDown[keyCode] = true;
 
-    _isDown[keyCode] = true;
-    if(_isUp[keyCode])
-      _wasDown[keyCode] = true;
+      _isUp[keyCode] = false;
+    }
 
-    _isUp[keyCode] = false;
-  }
-
-  export function keyUp(event: any) {
-    var keyCode = event.which;
-    _isDown[keyCode] = false;
-    _isUp[keyCode] = true;
+    export function keyUp(event: any) {
+      var keyCode = event.which;
+      _isDown[keyCode] = false;
+      _isUp[keyCode] = true;
+    }
   }
 }
 
@@ -116,9 +117,11 @@ class Profiler extends Subject {
   private timer: number = 0.0;
   public profile(delta:number): void {
     this.timer += delta;
-    if(this.timer >= 1000) {
+
+    if(this.timer >= 1000.0) {
+      this.timer -= 1000.0;
       this.emit(this.FPS);
-      this.timer -= 1000;
+      //console.log(this.FPS);
       this.FPS = 0
     };
     this.FPS++;
@@ -132,11 +135,12 @@ class Game {
   private profiler: Profiler;
 
   private static frameRate: number   = 60.0;
-  private static DELTA_CONST: number = Math.floor(1000.0 / Game.frameRate);
+  private static DELTA_CONST: number = Math.floor((1000.0 / Game.frameRate) * 0.5);
 
   private Player: Sprite;
 
   constructor(screen:any) {
+    console.log(Game.DELTA_CONST);
     this.screen = screen;
     this.ctx = this.screen.getContext("2d");
 
@@ -149,52 +153,54 @@ class Game {
     this.Player = new Sprite(new Texture("HEY", 20, 20));
   }
 
-
   private speed: number = 20;
-  private keyboardPoll: number = 0;
 
   /** Update and Render */
   update(delta: number): void {
-    if(Input.wasDown(Input.KEY.RIGHT)) {
+    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.RIGHT)) {
       if(this.Player.position.x + 20 < 800)
         this.Player.position.x += this.speed;
     }
-    if(Input.wasDown(Input.KEY.LEFT)) {
+    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.LEFT)) {
       if(this.Player.position.x > 0)
         this.Player.position.x -= this.speed;
     }
-    if(Input.wasDown(Input.KEY.UP)) {
+    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.UP)) {
       if(this.Player.position.y > 0)
         this.Player.position.y -= this.speed;
     }
-    if(Input.wasDown(Input.KEY.DOWN)) {
+    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.DOWN)) {
       if(this.Player.position.y + 20 < 600)
         this.Player.position.y += this.speed;
     }
 
-    if(Input.wasDown(Input.KEY.A)) {
+    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.A)) {
       this.Player.rotation -= 45;
     }
-    if(Input.wasDown(Input.KEY.D)) {
+    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.D)) {
       this.Player.rotation += 45;
     }
   }
-  draw() {
+  draw(): void {
     if(this.Player)
       this.Player.draw(this.ctx);
   }
 
+  private timer: number = 0.0;
   private then: number = performance.now();
   render(): void {
-    var now = performance.now();
-    var delta = now - this.then;
-    this.then = now;
+    this.timer += Game.DELTA_CONST;;
+    if( this.timer >= Math.floor(1000.0 / Game.frameRate) ) {
+      this.timer -= 16;
+      var now = performance.now();
+      var delta = (now - this.then);
+      this.then = now;
 
-    this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
-    this.update(delta);
-
-    this.draw();
-    this.profiler.profile(delta);
+      this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
+      this.update(delta);
+      this.draw();
+      this.profiler.profile(delta);
+    }
   }
 
   /** Start and Stop */
@@ -209,8 +215,8 @@ class Game {
 }
 
 window.onload = () => {
-  window.onkeydown = Input.keyDown;
-  window.onkeyup = Input.keyUp;
+  window.onkeydown = Input.Keyboard.keyDown;
+  window.onkeyup = Input.Keyboard.keyUp;
   var c: any = document.getElementById("gameCanvas");
   var game = new Game(c);
   game.run();
