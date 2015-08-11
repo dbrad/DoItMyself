@@ -1,10 +1,4 @@
 {
-	"folders": [
-		{
-			"follow_symlinks": true,
-			"path": "."
-		}
-	],
     "compilerOptions": {
         "module": "commonjs",
         "noImplicitAny": true,
@@ -12,6 +6,14 @@
         "preserveConstEnums": true,
         "outDir": "build/js",
         "target": "es5",
-        "noEmitOnError" : true
-    }
+        "noEmitOnError": true
+    },
+    "files": [
+        "./src/game.ts",
+        "./src/graphics.ts"
+    ],
+    "filesGlob": [
+        "./src/*.ts",
+        "!./lib/*.ts"
+    ]
 }

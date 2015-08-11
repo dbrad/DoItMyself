@@ -3,10 +3,22 @@
   <head>
     <meta charset="utf-8">
     <title>TypeScript Test</title>
+    <style media="screen">
+      canvas, img {
+        image-rendering: optimizeSpeed;             /* Older versions of FF          */
+        image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+        image-rendering: -webkit-optimize-contrast; /* Safari                        */
+        image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+        image-rendering: pixelated;                 /* Awesome future-browsers       */
+        -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+      }
+    </style>
   </head>
   <body>
     <h1 id="UPS">Test</h1>
-    <canvas id="gameCanvas" width="800" height="600" style="border: 1px solid #CCC"></canvas>
+    <canvas id="gameCanvas" width="800" height="400" style="border: 1px solid #CCC"></canvas>
+    <script src="js/lib/underscore.js" charset="utf-8"></script>
+    <script src="js/graphics.js" charset="utf-8"></script>
     <script src="js/game.js" charset="utf-8"></script>
   </body>
 </html>

@@ -1,3 +1,5 @@
+/// <reference path="../lib/underscore.browser.d.ts" />
+/// <reference path="graphics.ts" />
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -48,53 +50,6 @@ var Input;
         Keyboard.keyUp = keyUp;
     })(Keyboard = Input.Keyboard || (Input.Keyboard = {}));
 })(Input || (Input = {}));
-var Point = (function () {
-    function Point(x, y) {
-        if (x === void 0) { x = 0; }
-        if (y === void 0) { y = 0; }
-        this.x = x;
-        this.y = y;
-    }
-    return Point;
-})();
-var Dimension = (function () {
-    function Dimension(width, height) {
-        if (width === void 0) { width = 0; }
-        if (height === void 0) { height = 0; }
-        this.width = width;
-        this.height = height;
-    }
-    return Dimension;
-})();
-var Texture = (function () {
-    function Texture(src, width, height) {
-        this.image = new Image();
-        this.image.width = width;
-        this.image.height = height;
-        this.image.src = src;
-        this.size = new Dimension(width, height);
-    }
-    return Texture;
-})();
-var Sprite = (function () {
-    function Sprite(texture, position) {
-        if (position === void 0) { position = new Point(0, 0); }
-        this.texture = texture;
-        this.size = texture.size;
-        this.position = position;
-        this.rotation = 0;
-    }
-    Sprite.prototype.update = function (delta) { };
-    Sprite.prototype.draw = function (ctx) {
-        ctx.save();
-        ctx.translate(this.position.x + this.size.width / 2, this.position.y + this.size.height / 2);
-        ctx.rotate(this.rotation * Math.PI / 180);
-        ctx.fillStyle = "#FF0000";
-        ctx.fillRect(-this.size.width / 2, -this.size.height / 2, this.size.width, this.size.height);
-        ctx.restore();
-    };
-    return Sprite;
-})();
 var Subject = (function () {
     function Subject() {
         this.Observers = [];
@@ -131,59 +86,96 @@ var Profiler = (function (_super) {
 })(Subject);
 var Game = (function () {
     function Game(screen) {
-        this.speed = 20;
+        this.PantsTiles = [];
+        this.ShoesTiles = [];
+        this.speed = 16;
         this.timer = 0.0;
         this.then = performance.now();
         console.log(Game.DELTA_CONST);
         this.screen = screen;
         this.ctx = this.screen.getContext("2d");
+        this.ctx.mozImageSmoothingEnabled = false;
+        this.ctx.imageSmoothingEnabled = false;
         this.profiler = new Profiler();
-        this.profiler.addObserver(function (UPS) {
-            document.getElementById("UPS").innerHTML = UPS;
+        var FPSHeader = document.getElementById("UPS");
+        this.profiler.addObserver(function (FPS) {
+            FPSHeader.innerHTML = FPS;
         });
-        this.Player = new Sprite(new Texture("HEY", 20, 20));
     }
+    Game.prototype.init = function () {
+        console.log("Initing...");
+        this.PlayerSprites = new SpriteSheet("sheet", 16, 1, new Dimension(2, 4), new Point(0, 0));
+        this.PantsSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(52, 0));
+        this.ShoesSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(69, 0));
+        this.Player = new Sprite(new Texture(this.PlayerSprites.sprites[0]));
+        for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
+            for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
+                this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)] =
+                    new Tile(new Texture(this.PantsSprites.sprites[x + (y * this.PantsSprites.spritesPerRow)]), new Point(x * 16, y * 16));
+            }
+        }
+        for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
+            for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
+                this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)] =
+                    new Tile(new Texture(this.ShoesSprites.sprites[x + (y * this.ShoesSprites.spritesPerRow)]), new Point((x * 16) + 16, (y * 16)));
+            }
+        }
+    };
+    Game.prototype.tryMove = function (pos, limit, highLimit, move) {
+        var result = 0;
+        if ((!highLimit && pos - move >= limit) || (highLimit && pos + move <= limit)) {
+            result = move;
+        }
+        else if (move === 0) {
+            result = 0;
+        }
+        else {
+            result = this.tryMove(pos, limit, highLimit, Math.floor(move / 2));
+        }
+        return result;
+    };
     Game.prototype.update = function (delta) {
         if (Input.Keyboard.wasDown(Input.Keyboard.KEY.RIGHT)) {
-            if (this.Player.position.x + 20 < 800)
-                this.Player.position.x += this.speed;
+            var move = this.tryMove(this.Player.position.x + this.Player.size.width * this.Player.scale.width, this.screen.width, true, this.speed);
+            this.Player.position.x += move;
         }
         if (Input.Keyboard.wasDown(Input.Keyboard.KEY.LEFT)) {
-            if (this.Player.position.x > 0)
-                this.Player.position.x -= this.speed;
+            var move = this.tryMove(this.Player.position.x, 0, false, this.speed);
+            this.Player.position.x -= move;
         }
         if (Input.Keyboard.wasDown(Input.Keyboard.KEY.UP)) {
-            if (this.Player.position.y > 0)
-                this.Player.position.y -= this.speed;
+            var move = this.tryMove(this.Player.position.y, 0, false, this.speed);
+            this.Player.position.y -= move;
         }
         if (Input.Keyboard.wasDown(Input.Keyboard.KEY.DOWN)) {
-            if (this.Player.position.y + 20 < 600)
-                this.Player.position.y += this.speed;
-        }
-        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.A)) {
-            this.Player.rotation -= 45;
-        }
-        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.D)) {
-            this.Player.rotation += 45;
+            var move = this.tryMove(this.Player.position.y + this.Player.size.height * this.Player.scale.height, this.screen.height, true, this.speed);
+            this.Player.position.y += move;
         }
     };
     Game.prototype.draw = function () {
-        if (this.Player)
-            this.Player.draw(this.ctx);
+        this.Player.draw(this.ctx);
+        for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
+            for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
+                this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)].draw(this.ctx);
+            }
+        }
+        for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
+            for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
+                this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)].draw(this.ctx);
+            }
+        }
     };
     Game.prototype.render = function () {
         this.timer += Game.DELTA_CONST;
         ;
-        if (this.timer >= Math.floor(1000.0 / Game.frameRate)) {
-            this.timer -= 16;
-            var now = performance.now();
-            var delta = (now - this.then);
-            this.then = now;
-            this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
-            this.update(delta);
-            this.draw();
-            this.profiler.profile(delta);
-        }
+        this.timer -= 16;
+        var now = performance.now();
+        var delta = (now - this.then);
+        this.then = now;
+        this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
+        this.update(delta);
+        this.draw();
+        this.profiler.profile(delta);
     };
     Game.prototype.run = function () {
         console.log("Game running");
@@ -194,7 +186,7 @@ var Game = (function () {
         clearInterval(this._loopHandle);
     };
     Game.frameRate = 60.0;
-    Game.DELTA_CONST = Math.floor((1000.0 / Game.frameRate) * 0.5);
+    Game.DELTA_CONST = (1000.0 / Game.frameRate);
     return Game;
 })();
 window.onload = function () {
@@ -202,5 +194,9 @@ window.onload = function () {
     window.onkeyup = Input.Keyboard.keyUp;
     var c = document.getElementById("gameCanvas");
     var game = new Game(c);
-    game.run();
+    ImageCache.Loader.add("sheet", "assets/roguelikeChar_transparent.png");
+    ImageCache.Loader.load(function () {
+        game.init();
+        game.run();
+    });
 };

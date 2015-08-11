@@ -1,223 +1,226 @@
+/// <reference path="../lib/underscore.browser.d.ts" />
+/// <reference path="graphics.ts" />
+
 module Input {
-  export module Keyboard {
-    export enum KEY {
-      LEFT = 37,
-      RIGHT = 39,
-      UP = 38,
-      DOWN = 40,
-      A = 65,
-      D = 68
+    export module Keyboard {
+        export enum KEY {
+            LEFT = 37,
+            RIGHT = 39,
+            UP = 38,
+            DOWN = 40,
+            A = 65,
+            D = 68
+        }
+
+        var _isDown: boolean[] = [];
+        var _isUp: boolean[] = [];
+        var _wasDown: boolean[] = [];
+
+        for (var i = 0; i < 256; i++) {
+            _isUp[i] = true;
+        }
+
+        export function isDown(keyCode: KEY) {
+            return (_isDown[keyCode]);
+        }
+
+        export function wasDown(keyCode: KEY) {
+            var result = _wasDown[keyCode];
+            _wasDown[keyCode] = false;
+            return (result);
+        }
+
+        export function keyDown(event: any) {
+            var keyCode = event.which;
+
+            _isDown[keyCode] = true;
+            if (_isUp[keyCode])
+                _wasDown[keyCode] = true;
+
+            _isUp[keyCode] = false;
+        }
+
+        export function keyUp(event: any) {
+            var keyCode = event.which;
+            _isDown[keyCode] = false;
+            _isUp[keyCode] = true;
+        }
     }
-
-    var _isDown:  boolean[] = [];
-    var _isUp:    boolean[] = [];
-    var _wasDown: boolean[] = [];
-
-    for (var i = 0; i < 256; i++) {
-      _isUp[i] = true;
-    }
-
-    export function isDown(keyCode: KEY) {
-      return (_isDown[keyCode]);
-    }
-
-    export function wasDown(keyCode: KEY) {
-      var result = _wasDown[keyCode];
-      _wasDown[keyCode] = false;
-      return (result);
-    }
-
-    export function keyDown(event: any) {
-      var keyCode = event.which;
-
-      _isDown[keyCode] = true;
-      if(_isUp[keyCode])
-        _wasDown[keyCode] = true;
-
-      _isUp[keyCode] = false;
-    }
-
-    export function keyUp(event: any) {
-      var keyCode = event.which;
-      _isDown[keyCode] = false;
-      _isUp[keyCode] = true;
-    }
-  }
-}
-
-class Point {
-  x: number;
-  y: number;
-  constructor(x: number = 0, y: number = 0) {
-    this.x = x;
-    this.y = y;
-  }
-}
-
-class Dimension {
-  public width: number;
-  public height: number;
-  constructor(width: number = 0, height: number = 0) {
-    this.width = width;
-    this.height = height;
-  }
-}
-
-class Texture {
-  private image: any;
-  public size: Dimension;
-
-  constructor(src:string, width: number, height: number) {
-    this.image         = new Image();
-    this.image.width   = width;
-    this.image.height  = height;
-    this.image.src     = src;
-    this.size = new Dimension(width, height);
-  }
-}
-
-class Sprite {
-  position: Point;
-  rotation: number;
-  texture: Texture;
-  size: Dimension;
-
-  constructor(texture: Texture, position:Point = new Point(0,0)) {
-    this.texture = texture;
-    this.size = texture.size;
-    this.position = position;
-    this.rotation = 0;
-  }
-
-  update(delta: number) {}
-  draw(ctx: any) {
-    ctx.save();
-    ctx.translate(this.position.x + this.size.width / 2, this.position.y + this.size.height / 2);
-    ctx.rotate(this.rotation * Math.PI / 180);
-    ctx.fillStyle = "#FF0000";
-    ctx.fillRect(-this.size.width/2, -this.size.height/2, this.size.width, this.size.height);
-    ctx.restore();
-  }
 }
 
 class Subject {
-  private Observers:any[] = [];
-  addObserver(callback:any) {
-    this.Observers.push(callback);
-  }
-  emit(data:any): void {
-    for (let obv of this.Observers) {
-      obv(data);
+    private Observers: any[] = [];
+    addObserver(callback: any) {
+        this.Observers.push(callback);
     }
-  }
+    emit(data: any): void {
+        for (let obv of this.Observers) {
+            obv(data);
+        }
+    }
 }
 
 class Profiler extends Subject {
-  private FPS: number = 0;
-  private timer: number = 0.0;
-  public profile(delta:number): void {
-    this.timer += delta;
+    private FPS: number = 0;
+    private timer: number = 0.0;
+    public profile(delta: number): void {
+        this.timer += delta;
 
-    if(this.timer >= 1000.0) {
-      this.timer -= 1000.0;
-      this.emit(this.FPS);
-      //console.log(this.FPS);
-      this.FPS = 0
-    };
-    this.FPS++;
-  }
+        if (this.timer >= 1000.0) {
+            this.timer -= 1000.0;
+            this.emit(this.FPS);
+            //console.log(this.FPS);
+            this.FPS = 0
+        };
+        this.FPS++;
+    }
 }
 
 class Game {
-  private _loopHandle: any;
-  private ctx: any;
-  private screen: any;
-  private profiler: Profiler;
+    private _loopHandle: any;
+    private ctx: any;
+    private screen: any;
+    private profiler: Profiler;
 
-  private static frameRate: number   = 60.0;
-  private static DELTA_CONST: number = Math.floor((1000.0 / Game.frameRate) * 0.5);
+    private static frameRate: number = 60.0;
+    private static DELTA_CONST: number = (1000.0 / Game.frameRate);// * 0.5;
 
-  private Player: Sprite;
+    private Player: Sprite;
+    private PantsTiles: Tile[] = [];
+    private ShoesTiles: Tile[] = [];
+    public PlayerSprites: SpriteSheet;
+    public PantsSprites: SpriteSheet;
+    public ShoesSprites: SpriteSheet;
 
-  constructor(screen:any) {
-    console.log(Game.DELTA_CONST);
-    this.screen = screen;
-    this.ctx = this.screen.getContext("2d");
+    constructor(screen: HTMLCanvasElement) {
+        console.log(Game.DELTA_CONST);
+        this.screen = screen;
+        this.ctx = this.screen.getContext("2d");
+        this.ctx.mozImageSmoothingEnabled = false;
+        this.ctx.imageSmoothingEnabled = false;
 
-    this.profiler = new Profiler();
-
-    this.profiler.addObserver(function(UPS:any) {
-      document.getElementById("UPS").innerHTML = UPS;
-    });
-
-    this.Player = new Sprite(new Texture("HEY", 20, 20));
-  }
-
-  private speed: number = 20;
-
-  /** Update and Render */
-  update(delta: number): void {
-    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.RIGHT)) {
-      if(this.Player.position.x + 20 < 800)
-        this.Player.position.x += this.speed;
-    }
-    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.LEFT)) {
-      if(this.Player.position.x > 0)
-        this.Player.position.x -= this.speed;
-    }
-    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.UP)) {
-      if(this.Player.position.y > 0)
-        this.Player.position.y -= this.speed;
-    }
-    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.DOWN)) {
-      if(this.Player.position.y + 20 < 600)
-        this.Player.position.y += this.speed;
+        this.profiler = new Profiler();
+        var FPSHeader = document.getElementById("UPS")
+        this.profiler.addObserver(function(FPS: any) {
+            FPSHeader.innerHTML = FPS;
+        });
     }
 
-    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.A)) {
-      this.Player.rotation -= 45;
-    }
-    if(Input.Keyboard.wasDown(Input.Keyboard.KEY.D)) {
-      this.Player.rotation += 45;
-    }
-  }
-  draw(): void {
-    if(this.Player)
-      this.Player.draw(this.ctx);
-  }
+    init(): void {
+        console.log("Initing...");
+        this.PlayerSprites = new SpriteSheet("sheet", 16, 1, new Dimension(2, 4), new Point(0, 0));
+        this.PantsSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(52, 0));
+        this.ShoesSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(69, 0));
 
-  private timer: number = 0.0;
-  private then: number = performance.now();
-  render(): void {
-    this.timer += Game.DELTA_CONST;;
-    if( this.timer >= Math.floor(1000.0 / Game.frameRate) ) {
-      this.timer -= 16;
-      var now = performance.now();
-      var delta = (now - this.then);
-      this.then = now;
+        this.Player = new Sprite(new Texture(this.PlayerSprites.sprites[0]));
 
-      this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
-      this.update(delta);
-      this.draw();
-      this.profiler.profile(delta);
+        for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
+            for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
+                this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)] =
+                new Tile(new Texture(this.PantsSprites.sprites[x + (y * this.PantsSprites.spritesPerRow)]),
+                new Point(x * 16, y * 16));
+            }
+        }
+        for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
+            for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
+                this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)] =
+                new Tile(new Texture(this.ShoesSprites.sprites[x + (y * this.ShoesSprites.spritesPerRow)]),
+                new Point((x * 16) + 16, (y * 16)));
+            }
+        }
     }
-  }
 
-  /** Start and Stop */
-  run(): void {
-    console.log("Game running");
-    this._loopHandle = setInterval(this.render.bind(this), Game.DELTA_CONST);
-  }
-  stop(): void {
-    console.log("Game stopped")
-    clearInterval(this._loopHandle);
-  }
+    private speed: number = 16;
+
+    tryMove(pos: number, limit: number, highLimit: boolean, move: number): number {
+        var result: number = 0;
+        if ((!highLimit && pos - move >= limit) || (highLimit && pos + move <= limit)) {
+            result = move;
+        } else if (move === 0) {
+            result = 0;
+        } else {
+            result = this.tryMove(pos, limit, highLimit, Math.floor(move / 2));
+        }
+
+        return result
+    }
+
+    /** Update and Render */
+    update(delta: number): void {
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.RIGHT)) {
+            var move = this.tryMove(
+                this.Player.position.x + this.Player.size.width * this.Player.scale.width,
+                this.screen.width, true, this.speed);
+            this.Player.position.x += move;
+        }
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.LEFT)) {
+            var move = this.tryMove(this.Player.position.x, 0, false, this.speed);
+            this.Player.position.x -= move;
+        }
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.UP)) {
+            var move = this.tryMove(this.Player.position.y, 0, false, this.speed);
+            this.Player.position.y -= move;
+        }
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.DOWN)) {
+            var move = this.tryMove(
+                this.Player.position.y + this.Player.size.height * this.Player.scale.height,
+                this.screen.height, true, this.speed);
+            this.Player.position.y += move;
+        }
+    }
+    draw(): void {
+        this.Player.draw(this.ctx);
+
+        for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
+            for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
+                this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)].draw(this.ctx);
+            }
+        }
+
+        for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
+            for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
+                this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)].draw(this.ctx);
+            }
+        }
+    }
+
+    private timer: number = 0.0;
+    private then: number = performance.now();
+    render(): void {
+        this.timer += Game.DELTA_CONST;;
+        // if( this.timer >= Math.floor(1000.0 / Game.frameRate) ) {
+        this.timer -= 16;
+        var now = performance.now();
+        var delta = (now - this.then);
+        this.then = now;
+
+        this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
+        this.update(delta);
+        this.draw();
+        this.profiler.profile(delta);
+        // }
+    }
+
+    /** Start and Stop */
+    run(): void {
+        console.log("Game running");
+        this._loopHandle = setInterval(this.render.bind(this), Game.DELTA_CONST);
+    }
+    stop(): void {
+        console.log("Game stopped")
+        clearInterval(this._loopHandle);
+    }
 }
 
 window.onload = () => {
-  window.onkeydown = Input.Keyboard.keyDown;
-  window.onkeyup = Input.Keyboard.keyUp;
-  var c: any = document.getElementById("gameCanvas");
-  var game = new Game(c);
-  game.run();
+    window.onkeydown = Input.Keyboard.keyDown;
+    window.onkeyup = Input.Keyboard.keyUp;
+
+    var c: any = document.getElementById("gameCanvas");
+    var game = new Game(c);
+    ImageCache.Loader.add("sheet", "assets/roguelikeChar_transparent.png");
+    ImageCache.Loader.load(function() {
+      game.init();
+      game.run();
+    })
 };
