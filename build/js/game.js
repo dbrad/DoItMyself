@@ -86,8 +86,6 @@ var Profiler = (function (_super) {
 })(Subject);
 var Game = (function () {
     function Game(screen) {
-        this.PantsTiles = [];
-        this.ShoesTiles = [];
         this.speed = 16;
         this.timer = 0.0;
         this.then = performance.now();
@@ -105,21 +103,7 @@ var Game = (function () {
     Game.prototype.init = function () {
         console.log("Initing...");
         this.PlayerSprites = new SpriteSheet("sheet", 16, 1, new Dimension(2, 4), new Point(0, 0));
-        this.PantsSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(52, 0));
-        this.ShoesSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(69, 0));
         this.Player = new Sprite(new Texture(this.PlayerSprites.sprites[0]));
-        for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
-            for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
-                this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)] =
-                    new Tile(new Texture(this.PantsSprites.sprites[x + (y * this.PantsSprites.spritesPerRow)]), new Point(x * 16, y * 16));
-            }
-        }
-        for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
-            for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
-                this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)] =
-                    new Tile(new Texture(this.ShoesSprites.sprites[x + (y * this.ShoesSprites.spritesPerRow)]), new Point((x * 16) + 16, (y * 16)));
-            }
-        }
     };
     Game.prototype.tryMove = function (pos, limit, highLimit, move) {
         var result = 0;
@@ -154,16 +138,6 @@ var Game = (function () {
     };
     Game.prototype.draw = function () {
         this.Player.draw(this.ctx);
-        for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
-            for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
-                this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)].draw(this.ctx);
-            }
-        }
-        for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
-            for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
-                this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)].draw(this.ctx);
-            }
-        }
     };
     Game.prototype.render = function () {
         this.timer += Game.DELTA_CONST;
