@@ -86,11 +86,13 @@ class Game {
     private static DELTA_CONST: number = (1000.0 / Game.frameRate);// * 0.5;
 
     private Player: Sprite;
-    private PantsTiles: Tile[] = [];
-    private ShoesTiles: Tile[] = [];
+    // private PantsTiles: Tile[] = [];
+    // private ShoesTiles: Tile[] = [];
+    // private ArmorTiles: Tile[] = [];
     public PlayerSprites: SpriteSheet;
-    public PantsSprites: SpriteSheet;
-    public ShoesSprites: SpriteSheet;
+    // public PantsSprites: SpriteSheet;
+    // public ShoesSprites: SpriteSheet;
+    // public ArmorSprites: SpriteSheet;
 
     constructor(screen: HTMLCanvasElement) {
         console.log(Game.DELTA_CONST);
@@ -109,25 +111,33 @@ class Game {
     init(): void {
         console.log("Initing...");
         this.PlayerSprites = new SpriteSheet("sheet", 16, 1, new Dimension(2, 4), new Point(0, 0));
-        this.PantsSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(52, 0));
-        this.ShoesSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(69, 0));
+        // this.PantsSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(52, 0));
+        // this.ShoesSprites = new SpriteSheet("sheet", 16, 1, new Dimension(1, 10), new Point(69, 0));
+        // this.ArmorSprites = new SpriteSheet("sheet", 16, 1, new Dimension(12, 10), new Point(103, 0));
 
         this.Player = new Sprite(new Texture(this.PlayerSprites.sprites[0]));
 
-        for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
-            for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
-                this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)] =
-                new Tile(new Texture(this.PantsSprites.sprites[x + (y * this.PantsSprites.spritesPerRow)]),
-                new Point(x * 16, y * 16));
-            }
-        }
-        for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
-            for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
-                this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)] =
-                new Tile(new Texture(this.ShoesSprites.sprites[x + (y * this.ShoesSprites.spritesPerRow)]),
-                new Point((x * 16) + 16, (y * 16)));
-            }
-        }
+        // for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
+        //     for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
+        //         this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)] =
+        //         new Tile(new Texture(this.PantsSprites.sprites[x + (y * this.PantsSprites.spritesPerRow)]),
+        //         new Point(x * 16, y * 16));
+        //     }
+        // }
+        // for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
+        //     for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
+        //         this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)] =
+        //         new Tile(new Texture(this.ShoesSprites.sprites[x + (y * this.ShoesSprites.spritesPerRow)]),
+        //         new Point((x * 16) + 16, (y * 16)));
+        //     }
+        // }
+        // for (var y = 0; y < this.ArmorSprites.spritesPerCol; y++) {
+        //     for (var x = 0; x < this.ArmorSprites.spritesPerRow; x++) {
+        //         this.ArmorTiles[x + (y * this.ArmorSprites.spritesPerRow)] =
+        //         new Tile(new Texture(this.ArmorSprites.sprites[x + (y * this.ArmorSprites.spritesPerRow)]),
+        //         new Point((x * 16) + 32, (y * 16)));
+        //     }
+        // }
     }
 
     private speed: number = 16;
@@ -171,17 +181,23 @@ class Game {
     draw(): void {
         this.Player.draw(this.ctx);
 
-        for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
-            for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
-                this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)].draw(this.ctx);
-            }
-        }
-
-        for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
-            for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
-                this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)].draw(this.ctx);
-            }
-        }
+        // for (var y = 0; y < this.PantsSprites.spritesPerCol; y++) {
+        //     for (var x = 0; x < this.PantsSprites.spritesPerRow; x++) {
+        //         this.PantsTiles[x + (y * this.PantsSprites.spritesPerRow)].draw(this.ctx);
+        //     }
+        // }
+        //
+        // for (var y = 0; y < this.ShoesSprites.spritesPerCol; y++) {
+        //     for (var x = 0; x < this.ShoesSprites.spritesPerRow; x++) {
+        //         this.ShoesTiles[x + (y * this.ShoesSprites.spritesPerRow)].draw(this.ctx);
+        //     }
+        // }
+        //
+        // for (var y = 0; y < this.ArmorSprites.spritesPerCol; y++) {
+        //     for (var x = 0; x < this.ArmorSprites.spritesPerRow; x++) {
+        //         this.ArmorTiles[x + (y * this.ArmorSprites.spritesPerRow)].draw(this.ctx);
+        //     }
+        // }
     }
 
 
