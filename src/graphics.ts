@@ -1,3 +1,8 @@
+/**
+ * Classes used for rendering and visual representation.
+ * They should know nothing of the game or game layer stuff
+ */
+
 class Point {
     protected _x: number;
     protected _y: number;
@@ -117,32 +122,34 @@ class Texture {
 
 class Tile {
     texture: Texture;
-    position: Point;
     size: Dimension;
 
-    constructor(texture: Texture, position: Point = new Point(0, 0)) {
+    constructor(texture: Texture) {
         this.texture = texture;
         this.size = texture.size;
-        this.position = position;
     }
 
     draw(ctx: any): void {
-        ctx.save();
-        ctx.translate(this.position.x, this.position.y);
         ctx.drawImage(this.texture.image, 0, 0, this.size.width, this.size.height);
-        ctx.restore();
     }
 }
 
 class Sprite extends Tile {
     rotation: number;
     scale: Dimension;
+    position: Point;
 
     constructor(texture: Texture, position: Point = new Point(0, 0)) {
-        super(texture, position);
+        super(texture);
 
+        this.position = position;
         this.rotation = 0;
         this.scale = new Dimension(1, 1);
+    }
+
+    move(position: Point) {
+        this.position.x = position.x;
+        this.position.y = position.y;
     }
 
     draw(ctx: any) {
@@ -165,8 +172,9 @@ class Sprite extends Tile {
 
 class SpriteSheet {
     private image: any;
-    sprites: any[] = [];
-    // TODO(david): Rename to textures
+    sprites: Texture[] = [];
+
+    name: string;
 
     gutter: number;
     offset: Point;
@@ -177,18 +185,15 @@ class SpriteSheet {
     spritesPerCol: number;
 
     constructor(
-        name: string, tileSize: number, gutter: number = 0,
+        imageName: string, sheetName: string, tileSize: number, gutter: number = 0,
         subsheet: Dimension = new Dimension(0, 0), offset: Point = new Point(0, 0)) {
-        /*
-        * TODO(david): I would like to remove the callback and do asset loading away from the actual SpriteSheet.
-        *              Then load the image from a Global Cache.
-        */
 
+        this.name = sheetName;
         this.offset = offset;
         this.subsheet = subsheet;
         this.tileSize = tileSize;
         this.gutter = gutter;
-        this.image = ImageCache.getTexture(name);
+        this.image = ImageCache.getTexture(imageName);
         this.storeSprites();
     }
 
@@ -203,29 +208,43 @@ class SpriteSheet {
 
         for (var y = 0; y < this.spritesPerCol; y++) {
             for (var x = 0; x < this.spritesPerRow; x++) {
-                // TODO(david): Store Textures and use them directly in Sprites and Tiles.
-                this.sprites[x + (y * this.spritesPerRow)] = document.createElement('canvas');
-                this.sprites[x + (y * this.spritesPerRow)].width = this.tileSize;
-                this.sprites[x + (y * this.spritesPerRow)].height = this.tileSize;
-                this.sprites[x + (y * this.spritesPerRow)].getContext('2d').drawImage(
-                    this.image,
+                var raw = document.createElement('canvas');
+                raw.width = this.tileSize;
+                raw.height = this.tileSize;
+                raw.getContext('2d').drawImage(this.image,
                     ((this.tileSize + this.gutter) * x) + this.offset.x,
                     ((this.tileSize + this.gutter) * y) + this.offset.y,
                     this.tileSize, this.tileSize, 0, 0, this.tileSize, this.tileSize);
 
+                this.sprites[x + (y * this.spritesPerRow)] = new Texture(raw);
             }
         }
     }
 }
 
+/** Global Caches */
+interface SpriteSheetArray {
+    [index: string]: SpriteSheet;
+}
+module SpriteSheetCache {
+    var sheets: SpriteSheetArray = {};
+
+    export function storeSheet(sheet: SpriteSheet): void {
+        sheets[sheet.name] = sheet;
+    }
+
+    export function spriteSheet(name: string): SpriteSheet {
+        return sheets[name];
+    }
+}
+
+
 interface ImageArray {
     [index: string]: HTMLImageElement;
 }
-
 interface StringArray {
     [index: string]: string;
 }
-
 module ImageCache {
     var cache: ImageArray = {};
     export function getTexture(name: string): HTMLImageElement {

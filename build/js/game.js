@@ -1,70 +1,15 @@
+/**
+ * Working file for the main game object and loop.
+ */
 /// <reference path="../lib/underscore.browser.d.ts" />
 /// <reference path="graphics.ts" />
+/// <reference path="patterns.ts" />
+/// <reference path="meta.ts" />
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var Input;
-(function (Input) {
-    var Keyboard;
-    (function (Keyboard) {
-        (function (KEY) {
-            KEY[KEY["LEFT"] = 37] = "LEFT";
-            KEY[KEY["RIGHT"] = 39] = "RIGHT";
-            KEY[KEY["UP"] = 38] = "UP";
-            KEY[KEY["DOWN"] = 40] = "DOWN";
-            KEY[KEY["A"] = 65] = "A";
-            KEY[KEY["D"] = 68] = "D";
-        })(Keyboard.KEY || (Keyboard.KEY = {}));
-        var KEY = Keyboard.KEY;
-        var _isDown = [];
-        var _isUp = [];
-        var _wasDown = [];
-        for (var i = 0; i < 256; i++) {
-            _isUp[i] = true;
-        }
-        function isDown(keyCode) {
-            return (_isDown[keyCode]);
-        }
-        Keyboard.isDown = isDown;
-        function wasDown(keyCode) {
-            var result = _wasDown[keyCode];
-            _wasDown[keyCode] = false;
-            return (result);
-        }
-        Keyboard.wasDown = wasDown;
-        function keyDown(event) {
-            var keyCode = event.which;
-            _isDown[keyCode] = true;
-            if (_isUp[keyCode])
-                _wasDown[keyCode] = true;
-            _isUp[keyCode] = false;
-        }
-        Keyboard.keyDown = keyDown;
-        function keyUp(event) {
-            var keyCode = event.which;
-            _isDown[keyCode] = false;
-            _isUp[keyCode] = true;
-        }
-        Keyboard.keyUp = keyUp;
-    })(Keyboard = Input.Keyboard || (Input.Keyboard = {}));
-})(Input || (Input = {}));
-var Subject = (function () {
-    function Subject() {
-        this.Observers = [];
-    }
-    Subject.prototype.addObserver = function (callback) {
-        this.Observers.push(callback);
-    };
-    Subject.prototype.emit = function (data) {
-        for (var _i = 0, _a = this.Observers; _i < _a.length; _i++) {
-            var obv = _a[_i];
-            obv(data);
-        }
-    };
-    return Subject;
-})();
 var Profiler = (function (_super) {
     __extends(Profiler, _super);
     function Profiler() {
@@ -86,10 +31,12 @@ var Profiler = (function (_super) {
 })(Subject);
 var Game = (function () {
     function Game(screen) {
-        this.speed = 16;
+        this.camera = new Point(12 * 16, 6 * 16);
+        this.change = true;
+        this.clearScreen = true;
         this.then = performance.now();
         this.lag = 0.0;
-        console.log(Game.DELTA_CONST);
+        console.log("Setting up screen and Profiler...");
         this.screen = screen;
         this.ctx = this.screen.getContext("2d");
         this.ctx.mozImageSmoothingEnabled = false;
@@ -101,43 +48,45 @@ var Game = (function () {
         });
     }
     Game.prototype.init = function () {
-        console.log("Initing...");
-        this.PlayerSprites = new SpriteSheet("sheet", 16, 1, new Dimension(2, 4), new Point(0, 0));
-        this.Player = new Sprite(new Texture(this.PlayerSprites.sprites[0]));
-    };
-    Game.prototype.tryMove = function (pos, limit, highLimit, move) {
-        var result = 0;
-        if ((!highLimit && pos - move >= limit) || (highLimit && pos + move <= limit)) {
-            result = move;
-        }
-        else if (move === 0) {
-            result = 0;
-        }
-        else {
-            result = this.tryMove(pos, limit, highLimit, Math.floor(move / 2));
-        }
-        return result;
+        console.log("Initializing...");
+        SpriteSheetCache.storeSheet(new SpriteSheet("sheet", "hero", 16, 1, new Dimension(2, 4), new Point(0, 0)));
+        SpriteSheetCache.storeSheet(new SpriteSheet("sheet", "lower", 16, 1, new Dimension(2, 10), new Point(52, 0)));
+        SpriteSheetCache.storeSheet(new SpriteSheet("sheet", "upper", 16, 1, new Dimension(12, 10), new Point(103, 0)));
+        SpriteSheetCache.storeSheet(new SpriteSheet("terrain", "terrain", 16, 1, new Dimension(10, 25), new Point(0, 0)));
+        SpriteSheetCache.storeSheet(new SpriteSheet("terrain", "tree", 16, 1, new Dimension(1, 1), new Point(221, 153)));
+        this.Player = new Player(new Sprite(SpriteSheetCache.spriteSheet("hero").sprites[0]), new Point(0, 0), this);
+        this.Player.addGear(new Sprite(SpriteSheetCache.spriteSheet("lower").sprites[10]));
+        this.Player.addGear(new Sprite(SpriteSheetCache.spriteSheet("lower").sprites[11]));
+        this.Player.addGear(new Sprite(SpriteSheetCache.spriteSheet("upper").sprites[3]));
+        this.World = new TileMap(new Dimension(25, 12));
+        this.BackdropL1 = new TileMap(new Dimension(50, 25));
+        this.BackdropL2 = new TileMap(new Dimension(50, 25));
+        var tileSet = new TileSet(SpriteSheetCache.spriteSheet("terrain"));
+        this.World.setTileSet(tileSet);
+        this.World.generateTest();
+        this.BackdropL1.setTileSet(tileSet);
+        this.BackdropL1.generateGrass();
+        tileSet = new TileSet(SpriteSheetCache.spriteSheet("tree"));
+        this.BackdropL2.setTileSet(tileSet);
+        this.BackdropL2.generateBackdrop();
     };
     Game.prototype.update = function (delta) {
-        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.RIGHT)) {
-            var move = this.tryMove(this.Player.position.x + this.Player.size.width * this.Player.scale.width, this.screen.width, true, this.speed);
-            this.Player.position.x += move;
-        }
-        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.LEFT)) {
-            var move = this.tryMove(this.Player.position.x, 0, false, this.speed);
-            this.Player.position.x -= move;
-        }
-        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.UP)) {
-            var move = this.tryMove(this.Player.position.y, 0, false, this.speed);
-            this.Player.position.y -= move;
-        }
-        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.DOWN)) {
-            var move = this.tryMove(this.Player.position.y + this.Player.size.height * this.Player.scale.height, this.screen.height, true, this.speed);
-            this.Player.position.y += move;
-        }
+        this.Player.update();
     };
     Game.prototype.draw = function () {
-        this.Player.draw(this.ctx);
+        if (this.clearScreen) {
+            this.BackdropL1.draw(this.ctx);
+            this.BackdropL2.draw(this.ctx);
+            this.clearScreen = false;
+        }
+        if (this.change) {
+            this.ctx.save();
+            this.ctx.translate(this.camera.x, this.camera.y);
+            this.World.draw(this.ctx);
+            this.Player.draw(this.ctx);
+            this.ctx.restore();
+            this.change = false;
+        }
     };
     Game.prototype.render = function () {
         var now = performance.now();
@@ -148,20 +97,22 @@ var Game = (function () {
             this.update(delta);
             this.lag -= Game.DELTA_CONST;
         }
-        this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
+        if (this.clearScreen) {
+            this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
+        }
         this.draw();
         this.profiler.profile(delta);
     };
     Game.prototype.run = function () {
         console.log("Game running");
-        this._loopHandle = setInterval(this.render.bind(this), 1000 / 60);
+        this._loopHandle = setInterval(this.render.bind(this), Game.DELTA_CONST);
     };
     Game.prototype.stop = function () {
         console.log("Game stopped");
         clearInterval(this._loopHandle);
     };
     Game.frameRate = 60.0;
-    Game.DELTA_CONST = (1000.0 / Game.frameRate);
+    Game.DELTA_CONST = Math2.round(1000.0 / Game.frameRate, 8);
     return Game;
 })();
 window.onload = function () {
@@ -170,6 +121,7 @@ window.onload = function () {
     var c = document.getElementById("gameCanvas");
     var game = new Game(c);
     ImageCache.Loader.add("sheet", "assets/roguelikeChar_transparent.png");
+    ImageCache.Loader.add("terrain", "assets/roguelikeSheet_transparent.png");
     ImageCache.Loader.load(function () {
         game.init();
         game.run();
