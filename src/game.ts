@@ -184,27 +184,32 @@ class Game {
         }
     }
 
-    private timer: number = 0.0;
+
     private then: number = performance.now();
+    private lag: number = 0.0;
     render(): void {
-        this.timer += Game.DELTA_CONST;;
-        // if( this.timer >= Math.floor(1000.0 / Game.frameRate) ) {
-        this.timer -= 16;
+    //  while(true) {
         var now = performance.now();
         var delta = (now - this.then);
         this.then = now;
+        this.lag += delta;
+
+        // Input?
+        while(this.lag >= Game.DELTA_CONST) {
+          this.update(delta);
+          this.lag -= Game.DELTA_CONST
+        }
 
         this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
-        this.update(delta);
         this.draw();
         this.profiler.profile(delta);
-        // }
+    //  }
     }
 
     /** Start and Stop */
     run(): void {
         console.log("Game running");
-        this._loopHandle = setInterval(this.render.bind(this), Game.DELTA_CONST);
+        this._loopHandle = setInterval(this.render.bind(this), 1000 / 60);
     }
     stop(): void {
         console.log("Game stopped")

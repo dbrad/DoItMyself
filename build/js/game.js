@@ -89,8 +89,8 @@ var Game = (function () {
         this.PantsTiles = [];
         this.ShoesTiles = [];
         this.speed = 16;
-        this.timer = 0.0;
         this.then = performance.now();
+        this.lag = 0.0;
         console.log(Game.DELTA_CONST);
         this.screen = screen;
         this.ctx = this.screen.getContext("2d");
@@ -166,20 +166,21 @@ var Game = (function () {
         }
     };
     Game.prototype.render = function () {
-        this.timer += Game.DELTA_CONST;
-        ;
-        this.timer -= 16;
         var now = performance.now();
         var delta = (now - this.then);
         this.then = now;
+        this.lag += delta;
+        while (this.lag >= Game.DELTA_CONST) {
+            this.update(delta);
+            this.lag -= Game.DELTA_CONST;
+        }
         this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
-        this.update(delta);
         this.draw();
         this.profiler.profile(delta);
     };
     Game.prototype.run = function () {
         console.log("Game running");
-        this._loopHandle = setInterval(this.render.bind(this), Game.DELTA_CONST);
+        this._loopHandle = setInterval(this.render.bind(this), 1000 / 60);
     };
     Game.prototype.stop = function () {
         console.log("Game stopped");
