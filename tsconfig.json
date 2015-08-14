@@ -9,9 +9,9 @@
         "noEmitOnError": true
     },
     "files": [
-        "./src/Input.ts",
         "./src/game.ts",
         "./src/graphics.ts",
+        "./src/input.ts",
         "./src/meta.ts",
         "./src/patterns.ts"
     ],

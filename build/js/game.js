@@ -31,7 +31,7 @@ var Profiler = (function (_super) {
 })(Subject);
 var Game = (function () {
     function Game(screen) {
-        this.camera = new Point(12 * 16, 6 * 16);
+        this.camera = new Point(1 * 16, 1 * 16);
         this.change = true;
         this.clearScreen = true;
         this.then = performance.now();
@@ -58,7 +58,7 @@ var Game = (function () {
         this.Player.addGear(new Sprite(SpriteSheetCache.spriteSheet("lower").sprites[10]));
         this.Player.addGear(new Sprite(SpriteSheetCache.spriteSheet("lower").sprites[11]));
         this.Player.addGear(new Sprite(SpriteSheetCache.spriteSheet("upper").sprites[3]));
-        this.World = new TileMap(new Dimension(25, 12));
+        this.World = new TileMap(new Dimension(48, 23));
         this.BackdropL1 = new TileMap(new Dimension(50, 25));
         this.BackdropL2 = new TileMap(new Dimension(50, 25));
         var tileSet = new TileSet(SpriteSheetCache.spriteSheet("terrain"));
@@ -112,7 +112,7 @@ var Game = (function () {
         clearInterval(this._loopHandle);
     };
     Game.frameRate = 60.0;
-    Game.DELTA_CONST = Math2.round(1000.0 / Game.frameRate, 8);
+    Game.DELTA_CONST = Math2.round(1000.0 / Game.frameRate, 3);
     return Game;
 })();
 window.onload = function () {

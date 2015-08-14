@@ -14,7 +14,7 @@ class Profiler extends Subject {
 
         if (this.timer >= 1000.0) {
             this.timer -= 1000.0;
-            this.emit(this.FPS);            
+            this.emit(this.FPS);
             this.FPS = 0
         };
         this.FPS++;
@@ -29,7 +29,7 @@ class Game {
     private profiler: Profiler;
 
     private static frameRate: number = 60.0;
-    private static DELTA_CONST: number = Math2.round(1000.0 / Game.frameRate, 8);
+    private static DELTA_CONST: number = Math2.round(1000.0 / Game.frameRate, 3);
 
     constructor(screen: HTMLCanvasElement) {
         console.log("Setting up screen and Profiler...");
@@ -69,7 +69,7 @@ class Game {
         this.Player.addGear(new Sprite(SpriteSheetCache.spriteSheet("lower").sprites[11]));
         this.Player.addGear(new Sprite(SpriteSheetCache.spriteSheet("upper").sprites[3]));
 
-        this.World = new TileMap(new Dimension(25, 12));
+        this.World = new TileMap(new Dimension(48, 23));
         this.BackdropL1 = new TileMap(new Dimension(50, 25));
         this.BackdropL2 = new TileMap(new Dimension(50, 25));
 
@@ -92,7 +92,7 @@ class Game {
 
     /** Draw */
     // TODO(david): Move Camera to own class
-    camera: Point = new Point(12 * 16, 6 * 16);
+    camera: Point = new Point(1 * 16, 1 * 16);
     // TODO(david): Is there a better way to prevent over rendering?
     change: boolean = true;
     clearScreen: boolean = true;
