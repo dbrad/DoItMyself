@@ -2,9 +2,11 @@
  * Working file for the main game object and loop.
  */
 /// <reference path="../lib/underscore.browser.d.ts" />
-/// <reference path="graphics.ts" />
-/// <reference path="patterns.ts" />
-/// <reference path="meta.ts" />
+/// <reference path="./graphics.ts" />
+/// <reference path="./patterns.ts" />
+/// <reference path="./systems.ts"/>
+/// <reference path="./components.ts"/>
+/// <reference path="./meta.ts" />
 
 class Profiler extends Subject {
     private FPS: number = 0;
@@ -21,23 +23,23 @@ class Profiler extends Subject {
     }
 }
 
-
 class Game {
     private _loopHandle: any;
-    private ctx: any;
+
+    private Layers: Layer[] = [];
     private screen: any;
     private profiler: Profiler;
 
     private static frameRate: number = 60.0;
     private static DELTA_CONST: number = Math2.round(1000.0 / Game.frameRate, 3);
 
-    constructor(screen: HTMLCanvasElement) {
+    constructor(...screens: HTMLCanvasElement[]) {
         console.log("Setting up screen and Profiler...");
         /** Hook our game up to our canvas "Screen" */
-        this.screen = screen;
-        this.ctx = this.screen.getContext("2d");
-        this.ctx.mozImageSmoothingEnabled = false;
-        this.ctx.imageSmoothingEnabled = false;
+        for (var screen of screens) {
+            this.Layers.push(new Layer(screen));
+        }
+        this.screen = this.Layers[0];
 
         /** Setup profiler to keep an eye of performance */
         this.profiler = new Profiler();
@@ -48,6 +50,8 @@ class Game {
     }
 
     private Player: Player;
+    private pEntity: Entity;
+
     World: TileMap;
     BackdropL1: TileMap;
     BackdropL2: TileMap;
@@ -62,6 +66,15 @@ class Game {
         SpriteSheetCache.storeSheet(new SpriteSheet("terrain", "tree", 16, 1, new Dimension(1, 1), new Point(221, 153)));
 
         /** Initalize Player and World */
+        this.pEntity = new Entity();
+        this.pEntity.addComponent(new InputComponent());
+        this.pEntity.addComponent(new MovementComponent());
+        this.pEntity.addComponent(new PositionComponent(16, 16));
+        this.pEntity.addComponent(new AABBComponent(16, 16));
+        this.pEntity.addComponent(new SpriteComponent(SpriteSheetCache.spriteSheet("hero").sprites[0]));
+
+
+        this.camera = new Camera(new Point(16, 16), this);
         this.Player = new Player(new Sprite(SpriteSheetCache.spriteSheet("hero").sprites[0]),
             new Point(0, 0), this);
 
@@ -87,29 +100,40 @@ class Game {
 
     /** Update */
     update(delta: number): void {
+        input(this.pEntity);
+        collision(this.pEntity, this.World);
+        movement(this.pEntity);
         this.Player.update();
+        this.camera.update();
     }
 
     /** Draw */
-    // TODO(david): Move Camera to own class
-    camera: Point = new Point(1 * 16, 1 * 16);
+    camera: Camera;
     // TODO(david): Is there a better way to prevent over rendering?
     change: boolean = true;
     clearScreen: boolean = true;
     draw(): void {
+        for (var layer of this.Layers) {
+            if (layer.clear) {
+                layer.ctx.clearRect(0, 0, this.Layers[0].screen.width, this.Layers[0].screen.height);
+                layer.clear = false;
+            }
+        }
         if (this.clearScreen) {
-            this.BackdropL1.draw(this.ctx);
-            this.BackdropL2.draw(this.ctx);
+            this.Layers[0].ctx.clearRect(0, 0, this.Layers[0].screen.width, this.Layers[0].screen.height);
+            this.BackdropL1.draw(this.Layers[0].ctx);
+            this.BackdropL2.draw(this.Layers[0].ctx);
             this.clearScreen = false;
         }
-        if (this.change) {
-            this.ctx.save();
-            this.ctx.translate(this.camera.x, this.camera.y);
+        if (this.pEntity["sprite"].redraw || this.change) {
+            this.Layers[0].ctx.save();
+            this.Layers[0].ctx.translate(this.camera.position.x, this.camera.position.y);
 
-            this.World.draw(this.ctx);
-            this.Player.draw(this.ctx);
-            this.ctx.restore();
+            this.World.draw(this.Layers[0].ctx);
+            draw(this.Layers[0].ctx, this.pEntity);
+            this.Player.draw(this.Layers[0].ctx);
 
+            this.Layers[0].ctx.restore();
             this.change = false;
         }
     }
@@ -117,32 +141,38 @@ class Game {
     /** Render/Main Game Loop */
     private then: number = performance.now();
     private lag: number = 0.0;
+    private skippedFrames = 0;
+
     render(): void {
         var now = performance.now();
         var delta = (now - this.then);
         this.then = now;
         this.lag += delta;
+        this.skippedFrames = 0;
 
-        while (this.lag >= Game.DELTA_CONST) {
+        while (this.lag >= Game.DELTA_CONST && this.skippedFrames < 10) {
             this.update(delta);
+            this.profiler.profile(delta);
             this.lag -= Game.DELTA_CONST
+            this.skippedFrames++;
         }
 
-        if (this.clearScreen) {
-            this.ctx.clearRect(0, 0, this.screen.width, this.screen.height);
-        }
         this.draw();
-        this.profiler.profile(delta);
+
+        this._loopHandle = window.requestAnimationFrame(this.render.bind(this));
+
     }
 
     /** Start and Stop */
     run(): void {
         console.log("Game running");
-        this._loopHandle = setInterval(this.render.bind(this), Game.DELTA_CONST);
+        //this._loopHandle = setInterval(this.render.bind(this), Game.DELTA_CONST);
+        this._loopHandle = window.requestAnimationFrame(this.render.bind(this));
     }
     stop(): void {
         console.log("Game stopped")
-        clearInterval(this._loopHandle);
+        window.cancelAnimationFrame(this._loopHandle);
+        //clearInterval(this._loopHandle);
     }
 }
 
@@ -150,8 +180,10 @@ window.onload = () => {
     window.onkeydown = Input.Keyboard.keyDown;
     window.onkeyup = Input.Keyboard.keyUp;
 
-    var c: any = document.getElementById("gameCanvas");
-    var game = new Game(c);
+    var c0: any = document.getElementById("layer_0");
+    var c1: any = document.getElementById("layer_1");
+    var c2: any = document.getElementById("layer_2");
+    var game = new Game(c0, c1, c2);
     ImageCache.Loader.add("sheet", "assets/roguelikeChar_transparent.png");
     ImageCache.Loader.add("terrain", "assets/roguelikeSheet_transparent.png");
     ImageCache.Loader.load(function() {

@@ -10,6 +10,35 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+var Camera = (function () {
+    function Camera(position, game) {
+        this.position = position;
+        this.game = game;
+    }
+    Camera.prototype.update = function () {
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.D)) {
+            this.position.x += 16;
+            this.game.change = true;
+            this.game.clearScreen = true;
+        }
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.A)) {
+            this.position.x -= 16;
+            this.game.change = true;
+            this.game.clearScreen = true;
+        }
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.W)) {
+            this.position.y -= 16;
+            this.game.change = true;
+            this.game.clearScreen = true;
+        }
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.S)) {
+            this.position.y += 16;
+            this.game.change = true;
+            this.game.clearScreen = true;
+        }
+    };
+    return Camera;
+})();
 var Human = (function () {
     function Human(body, position, game) {
         this.redraw = true;
@@ -21,19 +50,12 @@ var Human = (function () {
     Human.prototype.addGear = function (sprite) {
         this.gear.push(sprite);
     };
-    Human.prototype.update = function () {
-        var newPos = new Point(this.position.x * 16, this.position.y * 16);
-        this.body.move(newPos);
-        for (var _i = 0, _a = this.gear; _i < _a.length; _i++) {
-            var gear = _a[_i];
-            gear.move(newPos);
-        }
-    };
+    Human.prototype.update = function () { };
     Human.prototype.draw = function (ctx) {
-        this.body.draw(ctx);
+        this.body.draw(ctx, this.position.x * 16, this.position.y * 16);
         for (var _i = 0, _a = this.gear; _i < _a.length; _i++) {
             var gear = _a[_i];
-            gear.draw(ctx);
+            gear.draw(ctx, this.position.x * 16, this.position.y * 16);
         }
     };
     return Human;
@@ -106,8 +128,10 @@ var TileSet = (function () {
 var TileMap = (function () {
     function TileMap(size) {
         if (size === void 0) { size = new Dimension(1, 1); }
+        this.cached = false;
         this.size = size;
         this.tiles = [];
+        this.cache = document.createElement('canvas');
     }
     TileMap.prototype.setTile = function (x, y, value) {
         this.tiles[x + (y * this.size.width)] = value;
@@ -137,14 +161,19 @@ var TileMap = (function () {
         }
     };
     TileMap.prototype.draw = function (ctx) {
-        for (var y = 0; y < this.size.height; y++) {
-            for (var x = 0; x < this.size.width; x++) {
-                ctx.save();
-                ctx.translate(x * 16, y * 16);
-                this.getTile(x, y).draw(ctx);
-                ctx.restore();
+        var externalCTX = ctx;
+        if (!this.cached) {
+            this.cache.width = this.size.width * 16;
+            this.cache.height = this.size.height * 16;
+            var ctx = this.cache.getContext('2d');
+            for (var y = 0; y < this.size.height; y++) {
+                for (var x = 0; x < this.size.width; x++) {
+                    this.getTile(x, y).draw(ctx, x * 16, y * 16);
+                }
             }
+            this.cached = true;
         }
+        externalCTX.drawImage(this.cache, 0, 0);
     };
     return TileMap;
 })();

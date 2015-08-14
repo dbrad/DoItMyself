@@ -6,6 +6,38 @@
 /// <reference path="graphics.ts" />
 /// <reference path="input.ts" />
 
+class Camera {
+    position: Point;
+    game: Game;
+
+    constructor(position: Point, game: Game) {
+        this.position = position;
+        this.game = game;
+    }
+
+    update() {
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.D)) {
+            this.position.x += 16;
+            this.game.change = true;
+            this.game.clearScreen = true;
+        }
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.A)) {
+            this.position.x -= 16;
+            this.game.change = true;
+            this.game.clearScreen = true;
+        }
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.W)) {
+            this.position.y -= 16;
+            this.game.change = true;
+            this.game.clearScreen = true;
+        }
+        if (Input.Keyboard.wasDown(Input.Keyboard.KEY.S)) {
+            this.position.y += 16;
+            this.game.change = true;
+            this.game.clearScreen = true;
+        }
+    }
+}
 class Human {
     position: Point;
     body: Sprite;
@@ -27,19 +59,12 @@ class Human {
         this.gear.push(sprite);
     }
 
-    update() {
-        var newPos = new Point(this.position.x * 16, this.position.y * 16);
-        this.body.move(newPos);
-        for (var gear of this.gear) {
-            gear.move(newPos);
-        }
-
-    }
+    update() { }
 
     draw(ctx: any) {
-        this.body.draw(ctx);
+        this.body.draw(ctx, this.position.x * 16, this.position.y * 16);
         for (var gear of this.gear) {
-            gear.draw(ctx);
+            gear.draw(ctx, this.position.x * 16, this.position.y * 16);
         }
 
     }
@@ -69,6 +94,7 @@ class Player extends Human {
             this.redraw = true;
         }
 
+        /** Hacky pathfinding */
         if (this.redraw) {
             var tile = this.game.World.getTile(this.position.x + dir.x, this.position.y + dir.y);
             if (tile && tile.walkable) {
@@ -84,7 +110,7 @@ class Player extends Human {
 
 class VTile extends Tile {
     walkable: boolean;
-    constructor(texture: Texture, walkable: boolean = true) {
+    constructor(texture: HTMLCanvasElement, walkable: boolean = true) {
         super(texture);
         this.walkable = walkable;
     }
@@ -113,17 +139,18 @@ class TileSet {
     }
 }
 
-interface TileSetArray {
-    [index: string]: TileSet;
-}
 class TileMap {
     private tileSet: TileSet;
+    private cache: HTMLCanvasElement;
+    private cached: boolean = false;
     tiles: number[];
     size: Dimension;
+    layer: number;
 
     constructor(size: Dimension = new Dimension(1, 1)) {
         this.size = size;
         this.tiles = [];
+        this.cache = document.createElement('canvas');
     }
 
     setTile(x: number, y: number, value: number): void {
@@ -173,16 +200,19 @@ class TileMap {
         }
     }
 
-    draw(ctx: CanvasRenderingContext2D): void {
-        for (var y: number = 0; y < this.size.height; y++) {
-            for (var x: number = 0; x < this.size.width; x++) {
-                ctx.save();
-                ctx.translate(x * 16, y * 16);
-                this.getTile(x, y).draw(ctx);
-                //ctx.fillText(x+"",0,10);
-
-                ctx.restore();
+    draw(ctx: Context2D): void {
+        var externalCTX = ctx;
+        if (!this.cached) {
+            this.cache.width = this.size.width * 16;
+            this.cache.height = this.size.height * 16;
+            var ctx = <Context2D>this.cache.getContext('2d');
+            for (var y: number = 0; y < this.size.height; y++) {
+                for (var x: number = 0; x < this.size.width; x++) {
+                    this.getTile(x, y).draw(ctx, x * 16, y * 16);
+                }
             }
+            this.cached = true;
         }
+        externalCTX.drawImage(this.cache, 0, 0);
     }
 }

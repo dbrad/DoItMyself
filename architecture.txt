@@ -1,0 +1,44 @@
+PHYSICAL Layers
+0 - Maps
+1 - UIFrame
+2 - Game
+3 - Overlay
+
+Logical Layers
+0 - Maps (Low Updates/On Location change only)
+  Drawing
+    TerrainGround     - TileMap
+    TerrainDetails    - TileMap
+  Non-Drawing
+    TerrainCollision  - CollisionMap (Invisible grid of movement permission / movement cost)
+    EventMap          - EventMap (Invisible grid of event triggers)
+
+1 - UIFrame (Low Update / GameState Change only)
+  UIFrames            - Prerendered Frames (Low Update Frames for the UI);
+
+2 - Entity (High Updates / Can move around)
+  Entities
+
+2 - Overlay (Top Level/ Moderate Updates)
+  UIWidgets (Bars / Icons)
+  Text (Speech / Menu Text / Combat Text)
+
+
+Async / Globals
+  EnemyAI
+  Caches
+    Image Cache
+    Spritesheet Cache
+
+  PreRenderer (pre-caches tilemaps that should be used soon)
+    Pass this a tilemap, it will draw it to a hidden / offscreen canvas, which will trigger the internal cache of TileMap
+    The next render will draw the cached TileMap
+
+- Try to use ECS and StateMachines when able
+- Make my own tilemap tool
+
+- Think of a system for storing all needed TileMaps, without bogging memory down
+  - Room Object in a World Wrapper?
+  - Room has a tilemap and a list of connected rooms
+  - World will keep ?? rooms in memory, hopefully near / connected ones
+  - Clear out unreachable rooms, and rooms more than ?? jumps away

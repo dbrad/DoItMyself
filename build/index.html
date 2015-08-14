@@ -5,7 +5,7 @@
     <title>TypeScript Test</title>
     <style media="screen">
       body, html {
-        text-align: center;
+        /*text-align: center;*/
       }
       canvas, img {
         image-rendering: optimizeSpeed;             /* Older versions of FF          */
@@ -15,15 +15,34 @@
         image-rendering: pixelated;                 /* Awesome future-browsers       */
         -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
       }
+      #stage {
+        position: relative;
+        width: 800px;
+        height: 400px
+      }
+      canvas {
+        position: absolute;
+      }
+      #layer_0 {z-index: 1;}
+      #layer_1 {z-index: 2;}
+      #layer_2 {z-index: 3;}
     </style>
   </head>
   <body>
     <h1 id="UPS">Test</h1>
-    <canvas id="gameCanvas" width="800" height="400" style="border: 1px solid #CCC"></canvas>
+    <div id="stage" style="border: 1px solid #CCC">
+      <canvas id="layer_0" width="800" height="400" ></canvas>
+      <canvas id="layer_1" width="800" height="400" ></canvas>
+      <canvas id="layer_2" width="800" height="400" ></canvas>
+    </div>
     <script src="js/lib/underscore.js" charset="utf-8"></script>
+    <script src="js/math2.js" charset="utf-8"></script>
     <script src="js/patterns.js" charset="utf-8"></script>
+    <script src="js/components.js" charset="utf-8"></script>
+    <script src="js/systems.js" charset="utf-8"></script>
     <script src="js/input.js" charset="utf-8"></script>
     <script src="js/graphics.js" charset="utf-8"></script>
+    <script src="js/caches.js" charset="utf-8"></script>
     <script src="js/meta.js" charset="utf-8"></script>
     <script src="js/game.js" charset="utf-8"></script>
   </body>

@@ -6,7 +6,11 @@ module Input {
             UP = 38,
             DOWN = 40,
             A = 65,
-            D = 68
+            D = 68,
+            W = 87,
+            S = 83,
+            ENTER = 13,
+            SPACE = 32
         }
 
         var _isDown: boolean[] = [];

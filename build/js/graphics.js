@@ -7,6 +7,24 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+var Context2D = (function (_super) {
+    __extends(Context2D, _super);
+    function Context2D() {
+        _super.apply(this, arguments);
+    }
+    return Context2D;
+})(CanvasRenderingContext2D);
+var Layer = (function () {
+    function Layer(screen) {
+        this.screen = screen;
+        this.ctx = this.screen.getContext('2d');
+        this.ctx.mozImageSmoothingEnabled = false;
+        this.ctx.imageSmoothingEnabled = false;
+        this.redraw = true;
+        this.clear = true;
+    }
+    return Layer;
+})();
 var Point = (function () {
     function Point(x, y) {
         if (x === void 0) { x = 0; }
@@ -34,93 +52,11 @@ var Point = (function () {
         enumerable: true,
         configurable: true
     });
+    Point.from = function (x, y) {
+        return new Point(x, y);
+    };
     return Point;
 })();
-var Math2;
-(function (Math2) {
-    function round(num, places) {
-        var pow10 = Math.pow(10, places);
-        var result = num * pow10;
-        result = Math.round(result);
-        result /= pow10;
-        return result;
-    }
-    Math2.round = round;
-})(Math2 || (Math2 = {}));
-var Vector2 = (function (_super) {
-    __extends(Vector2, _super);
-    function Vector2(x, y) {
-        if (x === void 0) { x = 0; }
-        if (y === void 0) { y = 0; }
-        _super.call(this, x, y);
-        this.CalculateMagAndDir();
-    }
-    Object.defineProperty(Vector2.prototype, "x", {
-        get: function () {
-            return (this._x);
-        },
-        set: function (x) {
-            this._x = x;
-            this.CalculateMagAndDir();
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Vector2.prototype, "y", {
-        get: function () {
-            return (this._y);
-        },
-        set: function (y) {
-            this._y = y;
-            this.CalculateMagAndDir();
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Vector2.prototype, "magnitude", {
-        get: function () {
-            return (this._magnitude);
-        },
-        set: function (magnitude) {
-            this._magnitude = magnitude;
-            this.CalculateXandY();
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Vector2.prototype, "direction", {
-        get: function () {
-            return (this._direction);
-        },
-        set: function (direction) {
-            this._direction = direction;
-            this.CalculateXandY();
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Vector2.prototype.CalculateMagAndDir = function () {
-        this._magnitude = Math2.round(Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2)), 3);
-        this._direction = Math2.round(Math.atan(this.y / this.x) * 180.0 / Math.PI, 3);
-    };
-    Vector2.prototype.CalculateXandY = function () {
-        this._x = Math2.round(this.magnitude * Math.cos((this.direction * (Math.PI / 180.0))), 3);
-        this._y = Math2.round(this.magnitude * Math.sin((this.direction * (Math.PI / 180.0))), 3);
-    };
-    Vector2.prototype.add = function (v1) {
-        this.x += v1.x;
-        this.y += v1.y;
-    };
-    Vector2.prototype.subtract = function (v1) {
-        this.x -= v1.x;
-        this.y -= v1.y;
-    };
-    Vector2.prototype.scale = function (scalar) {
-        this.x *= scalar;
-        this.y *= scalar;
-    };
-    return Vector2;
-})(Point);
 var Dimension = (function () {
     function Dimension(width, height) {
         if (width === void 0) { width = 0; }
@@ -128,47 +64,49 @@ var Dimension = (function () {
         this.width = width;
         this.height = height;
     }
+    Dimension.from = function (width, height) {
+        return new Dimension(width, height);
+    };
     return Dimension;
-})();
-var Texture = (function () {
-    function Texture(image) {
-        this.image = image;
-        this.size = new Dimension(image.width, image.height);
-    }
-    return Texture;
 })();
 var Tile = (function () {
     function Tile(texture) {
         this.texture = texture;
-        this.size = texture.size;
+        this.size = new Dimension(texture.width, texture.height);
     }
-    Tile.prototype.draw = function (ctx) {
-        ctx.drawImage(this.texture.image, 0, 0, this.size.width, this.size.height);
+    Tile.prototype.draw = function (ctx, x, y) {
+        ctx.drawImage(this.texture, 0, 0, this.size.width, this.size.height, x, y, this.size.width, this.size.height);
+        ctx.mozImageSmoothingEnabled = false;
+        ctx.imageSmoothingEnabled = false;
     };
     return Tile;
 })();
 var Sprite = (function (_super) {
     __extends(Sprite, _super);
-    function Sprite(texture, position) {
-        if (position === void 0) { position = new Point(0, 0); }
+    function Sprite(texture) {
         _super.call(this, texture);
-        this.position = position;
-        this.rotation = 0;
-        this.scale = new Dimension(1, 1);
+        this.hasScale = false;
+        this.hasRoation = false;
     }
-    Sprite.prototype.move = function (position) {
-        this.position.x = position.x;
-        this.position.y = position.y;
-    };
-    Sprite.prototype.draw = function (ctx) {
-        ctx.save();
-        ctx.translate(this.position.x + this.size.width * this.scale.width / 2, this.position.y + this.size.height * this.scale.height / 2);
-        ctx.rotate(this.rotation * Math.PI / 180);
-        ctx.scale(this.scale.width, this.scale.height);
-        ctx.drawImage(this.texture.image, 0, 0, this.size.width, this.size.height, -this.size.width / 2, -this.size.height / 2, this.size.width, this.size.height);
-        ctx.restore();
-        ctx.mozImageSmoothingEnabled = false;
-        ctx.imageSmoothingEnabled = false;
+    Sprite.prototype.draw = function (ctx, x, y, scale, rotation) {
+        if (scale === void 0) { scale = new Dimension(1, 1); }
+        if (rotation === void 0) { rotation = 0; }
+        this.hasScale = (scale.width > 1 || scale.height > 1);
+        this.hasRoation = (rotation != 0);
+        if (this.hasScale || this.hasRoation) {
+            ctx.save();
+            if (this.hasScale) {
+                ctx.scale(scale.width, scale.height);
+            }
+            if (this.hasRoation) {
+                ctx.rotate(rotation * Math.PI / 180);
+            }
+        }
+        _super.prototype.draw.call(this, ctx, x, y);
+        if (this.hasScale || this.hasRoation) {
+            ctx.restore();
+        }
+        this.hasScale = this.hasRoation = false;
     };
     return Sprite;
 })(Tile);
@@ -198,54 +136,12 @@ var SpriteSheet = (function () {
         }
         for (var y = 0; y < this.spritesPerCol; y++) {
             for (var x = 0; x < this.spritesPerRow; x++) {
-                var raw = document.createElement('canvas');
-                raw.width = this.tileSize;
-                raw.height = this.tileSize;
-                raw.getContext('2d').drawImage(this.image, ((this.tileSize + this.gutter) * x) + this.offset.x, ((this.tileSize + this.gutter) * y) + this.offset.y, this.tileSize, this.tileSize, 0, 0, this.tileSize, this.tileSize);
-                this.sprites[x + (y * this.spritesPerRow)] = new Texture(raw);
+                this.sprites[x + (y * this.spritesPerRow)] = document.createElement('canvas');
+                this.sprites[x + (y * this.spritesPerRow)].width = this.tileSize;
+                this.sprites[x + (y * this.spritesPerRow)].height = this.tileSize;
+                this.sprites[x + (y * this.spritesPerRow)].getContext('2d').drawImage(this.image, ((this.tileSize + this.gutter) * x) + this.offset.x, ((this.tileSize + this.gutter) * y) + this.offset.y, this.tileSize, this.tileSize, 0, 0, this.tileSize, this.tileSize);
             }
         }
     };
     return SpriteSheet;
 })();
-var SpriteSheetCache;
-(function (SpriteSheetCache) {
-    var sheets = {};
-    function storeSheet(sheet) {
-        sheets[sheet.name] = sheet;
-    }
-    SpriteSheetCache.storeSheet = storeSheet;
-    function spriteSheet(name) {
-        return sheets[name];
-    }
-    SpriteSheetCache.spriteSheet = spriteSheet;
-})(SpriteSheetCache || (SpriteSheetCache = {}));
-var ImageCache;
-(function (ImageCache) {
-    var cache = {};
-    function getTexture(name) {
-        return cache[name];
-    }
-    ImageCache.getTexture = getTexture;
-    var toLoad = {};
-    var loadCount = 0;
-    var Loader;
-    (function (Loader) {
-        function add(name, url) {
-            toLoad[name] = url;
-            loadCount++;
-        }
-        Loader.add = add;
-        function load(callback) {
-            var done = _.after(loadCount, callback);
-            for (var img in toLoad) {
-                cache[img] = new Image();
-                cache[img].src = toLoad[img];
-                cache[img].onload = done;
-                delete toLoad[img];
-            }
-            loadCount = 0;
-        }
-        Loader.load = load;
-    })(Loader = ImageCache.Loader || (ImageCache.Loader = {}));
-})(ImageCache || (ImageCache = {}));

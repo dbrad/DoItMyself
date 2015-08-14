@@ -9,11 +9,16 @@
         "noEmitOnError": true
     },
     "files": [
+        "./src/caches.ts",
+        "./src/components.ts",
         "./src/game.ts",
         "./src/graphics.ts",
         "./src/input.ts",
+        "./src/math2.ts",
         "./src/meta.ts",
-        "./src/patterns.ts"
+        "./src/patterns.ts",
+        "./src/systems.ts",
+        "./src/unused.ts"
     ],
     "filesGlob": [
         "./src/*.ts",
